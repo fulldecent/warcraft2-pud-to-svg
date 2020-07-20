@@ -1,2 +1,17 @@
-# warcraft2-pud-to-svg
-Save Warcraft II PUD files to SVG format
+# Warcraft II PUD to SVG
+## How to run
+
+### Prerequesites
+
+Install NodeJS
+
+### Normal run
+
+Save input as ./in.pud
+
+```sh
+node index.js > out.svg
+```
+
+
+
