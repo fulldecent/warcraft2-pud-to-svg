@@ -1,75 +1,77 @@
-const fs = require('fs'),
-      path = require('path'),
-      filePath = path.join(__dirname, 'in.pud');
+// Warcraft II PUD to SVG //////////////////////////////////////////////////////
+// William Entriken ////////////////////////////////////////////////////////////
+// https://github.com/fulldecent/warcraft2-pud-to-svg //////////////////////////
 
-const pud = fs.readFileSync(filePath);
+const pud = require('fs').readFileSync(process.stdin.fd);
 
+// PUD file specification
 // https://github.com/Wargus/wargus/blob/4e2cb6ccbe3eeebfbac938ad1d5d8bb46cfa6195/doc/pud-specs.txt
 
 // Load PUD into sections //////////////////////////////////////////////////////
-// ASSUMES THAT EACH SECTION IS ONLY USED ONCE (NOT IN SPEC THOUGH)
+const validPUDSections = ['TYPE', 'VER ', 'DESC', 'OWNR', 'ERA ', 'DIM ', 'UDTA', 'UGRD', 'SIDE', 'SGLD', 'SLBR', 'SOIL', 'AIPL', 'MTXM', 'SQM ', 'OILM', 'REGM', 'UNIT'];
 let pudSections = {};
-let pudParsingPointer = 0;
-let iterationStopper = 0;
-while (pudParsingPointer < pud.length) {
-  const sectionName = pud.slice(pudParsingPointer, pudParsingPointer+4);
-  const sectionLength = new DataView(pud.buffer).getUint32(pudParsingPointer+4, true);
-  const sectionData = pud.slice(pudParsingPointer + 8, pudParsingPointer + 8 + sectionLength);
-  pudSections[sectionName] = sectionData;
-  console.error("Section " + sectionName + " @" + pudParsingPointer + ", " + sectionLength + " bytes");
-  pudParsingPointer = pudParsingPointer + 8 + sectionLength;
-  iterationStopper++;
-  if (iterationStopper > 20) {
-    break;
+let remainingPud = pud;
+while (remainingPud.length > 0) {
+  const sectionName = remainingPud.slice(0, 4).toString();
+  if (!validPUDSections.includes(sectionName)) {
+    throw new Error("Invalid PUD section name: " + sectionName);
   }
+  if (sectionName in pudSections) {
+    throw new Error("The PUD has unexpected duplicate section: " + sectionName);
+  }
+  const sectionLength = remainingPud.readUInt32LE(4);
+  const sectionData = remainingPud.slice(8, 8+sectionLength);
+  pudSections[sectionName] = sectionData;
+  remainingPud = remainingPud.slice(4+4+sectionLength);
 }
 
-// Inspect /////////////////////////////////////////////////////////////////////
-const dims = new Uint16Array(
-  pudSections["DIM "].buffer,
-  pudSections["DIM "].byteOffset,
-  pudSections["DIM "].length / Uint16Array.BYTES_PER_ELEMENT);
-console.error("\nDimensions: ");
-console.error(dims);
+// Get dimensions //////////////////////////////////////////////////////////////
+const dimX = pudSections["DIM "].readUInt16LE(0);
+const dimY = pudSections["DIM "].readUInt16LE(2);
+if (dimX !== dimY) {
+  throw new Error("Map must be square");
+}
+console.error("Dimensions: ", dimX, dimY);
 
-// Header
-console.log('<svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">');
+// Header //////////////////////////////////////////////////////////////////////
+console.log('<svg viewBox="0 0 '+dimX+' '+dimY+'" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">');
 console.log('<style>');
 
-console.log('.t001x {fill: #303030}'); // light water
-console.log('.t002x {fill: #303030}'); // dark water
-console.log('.t003x {fill: #303030}'); // light coast
-console.log('.t004x {fill: #303030}'); // dark coast
-console.log('.t005x {fill: #50A725}'); // light ground
-console.log('.t006x {fill: #50A725}'); // dark ground
-console.log('.t007x {fill: #1F6600}'); // forest
-console.log('.t008x {fill: #303030}'); // mountains
-console.log('.t009x {fill: #303030}'); // human wall
-console.log('.t00Ax {fill: #303030}'); // orc walls
-console.log('.t00Bx {fill: #303030}'); // human walls
-console.log('.t00Cx {fill: #303030}'); // orc walls
-console.log('.t01xx {fill: #303030}'); // dark water and water
-console.log('.t02xx {fill: #303030}'); // water and coast
-console.log('.t03xx {fill: #303030}'); // dark coast and coast
-console.log('.t04xx {fill: #303030}'); // mount and coast
-console.log('.t05xx {fill: #303030}'); // coast and grass
-console.log('.t06xx {fill: #50A725}'); // dark grass and grass
-console.log('.t07xx {fill: #1F6600}'); // forest and grass
-console.log('.t08xx {fill: #303030}'); // human wall
-console.log('.t09xx {fill: #303030}'); // orc wall
+console.log('.t001x {fill: aqua}'); // light water
+console.log('.t002x {fill: aqua}'); // dark water
+console.log('.t003x {fill: steelblue}'); // light coast
+console.log('.t004x {fill: steelblue}'); // dark coast
+console.log('.t005x {fill: olivedrab}'); // light ground
+console.log('.t006x {fill: olivedrab}'); // dark ground
+console.log('.t007x {fill: darkgreen}'); // forest
+console.log('.t008x {fill: saddlebrown}'); // mountains
+console.log('.t009x {fill: gray}'); // human wall
+console.log('.t00Ax {fill: gray}'); // orc walls
+console.log('.t00Bx {fill: gray}'); // human walls
+console.log('.t00Cx {fill: gray}'); // orc walls
+console.log('.t01xx {fill: aqua}'); // dark water and water
+console.log('.t02xx {fill: lightcyan}'); // water and coast
+console.log('.t03xx {fill: lightcyan}'); // dark coast and coast
+console.log('.t04xx {fill: fuchsia}'); // mount and coast
+console.log('.t05xx {fill: plum}'); // coast and grass
+console.log('.t06xx {fill: olivedrab}'); // dark grass and grass
+console.log('.t07xx {fill: darkgreen}'); // forest and grass
+console.log('.t08xx {fill: gray}'); // human wall
+console.log('.t09xx {fill: gray}'); // orc wall
 console.log('.gold-mine {fill: gold}'); // orc wall
+console.log('.oil-patch {fill: blue}'); // orc wall
 console.log('</style>');
 
 // Map tiles ///////////////////////////////////////////////////////////////////
-const mtxm = new Uint16Array(
+const mtxm = new Uint16Array( // todo: should check LE
   pudSections["MTXM"].buffer,
   pudSections["MTXM"].byteOffset,
   pudSections["MTXM"].length / Uint16Array.BYTES_PER_ELEMENT);
-console.error("\nMTXM: ");
-console.error(mtxm);
-for (let x = 0; x < 128; x++) {
-  for (let y = 0; y < 128; y++) {
-    const tile = mtxm[y*128 + x];
+console.error("MTXM", mtxm);
+
+for (let x = 0; x < dimX; x++) {
+  for (let y = 0; y < dimY; y++) {
+    const tile = mtxm[y*dimX + x];
     const tile1234 = tile.toString(16).padStart(4, "0");
     const tile1 = tile1234.substr(0, 1) + 'xxx';
     const tile12 = tile1234.substr(0, 2) + 'xx';
@@ -83,38 +85,22 @@ for (let x = 0; x < 128; x++) {
 
 // Units ///////////////////////////////////////////////////////////////////////
 for (let bufferPointer = 0; bufferPointer < pudSections["UNIT"].length; bufferPointer += 8) {
-  const x = new Uint16Array(
-    pudSections["UNIT"].buffer,
-    pudSections["UNIT"].byteOffset + bufferPointer + 0,
-    2
-  )[0];
-  const y = new Uint16Array(
-    pudSections["UNIT"].buffer,
-    pudSections["UNIT"].byteOffset + bufferPointer + 2,
-    2
-  )[0];
-  const type = new Uint8Array(
-    pudSections["UNIT"].buffer,
-    pudSections["UNIT"].byteOffset + bufferPointer + 4,
-    2
-  )[0];
-  const owner = new Uint8Array(
-    pudSections["UNIT"].buffer,
-    pudSections["UNIT"].byteOffset + bufferPointer + 5,
-    2
-  )[0];
-  const resourceFactor = new Uint16Array(
-    pudSections["UNIT"].buffer,
-    pudSections["UNIT"].byteOffset + bufferPointer + 6,
-    2
-  )[0];
+  const aUNIT = pudSections["UNIT"].slice(bufferPointer, bufferPointer+8);
+  const x = aUNIT.readUInt16LE(0);
+  const y = aUNIT.readUInt16LE(2);
+  const type = aUNIT.readUInt8(4);
+  const owner = aUNIT.readUInt8(5);
+  const resourceFactor = aUNIT.readUInt16LE(6);
 
-  console.error('FOUND Unit');
-  console.error({x, y, type, owner, resourceFactor});
+  console.error("A UNIT", x, y, type, owner, resourceFactor);
 
-  if (type == 0x5c) { // gold mine
-    console.log(`<rect x="${x}" y="${y}" height="3" width="3" class="gold-mine" rx="0.2" style="stroke:#ffffff;stroke-opacity:1;stroke-width:0.1"/>`);
-//    console.log(`<text x="${x}.5" y="${y}.5" dominant-baseline="middle" text-anchor="middle">TEXT</text>`);
+  switch (type) {
+    case 0x5c: // Gold mine
+      console.log(`<rect x="${x}" y="${y}" height="3" width="3" class="gold-mine" rx="0.2" style="stroke:#ffffff;stroke-opacity:1;stroke-width:0.1"/>`);
+      break;
+    case 0x5d: // Oil patch
+      console.log(`<rect x="${x}" y="${y}" height="3" width="3" class="oil-patch" rx="0.2" style="stroke:#ffffff;stroke-opacity:1;stroke-width:0.1"/>`);
+      break;
   }
 }
 

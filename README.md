@@ -7,10 +7,8 @@ Install NodeJS
 
 ### Normal run
 
-Save input as ./in.pud
-
 ```sh
-node index.js > out.svg
+node index.js < in.pud > out.svg
 ```
 
 
