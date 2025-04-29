@@ -1,15 +1,3 @@
-# Warcraft II PUD to SVG
-## How to run
+# Warcraft II PUD online viewer
 
-### Prerequesites
-
-Install NodeJS
-
-### Normal run
-
-```sh
-node index.js < in.pud > out.svg
-```
-
-
-
+Access at <https://fulldecent.github.com/warcraft2-pud-to-svg>

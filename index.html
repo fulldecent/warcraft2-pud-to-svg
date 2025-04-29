@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warcraft II PUD online viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #320;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #dropZone {
+            flex-grow: 1;
+            border: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            margin: 20px;
+        }
+
+        #dropZone.dragover {
+            background-color: #f0f0f0;
+        }
+
+        #svgContainer {
+            max-width: 100%;
+            margin: 20px;
+        }
+
+        #downloadButton {
+            display: none;
+            margin: 10px 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        #downloadButton:hover {
+            background-color: #45a049;
+        }
+
+        @media print {
+            body>*:not(#svgContainer) {
+                display: none !important;
+            }
+
+            #svgContainer {
+                display: block;
+                max-width: none;
+                overflow: visible;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Warcraft II PUD online viewer</h1>
+    <div id="dropZone">Drop a .pud file anywhere on this page or click to select</div>
+    <input type="file" id="fileInput" accept=".pud" style="display: none;">
+    <button id="downloadButton">Download SVG</button>
+    <div id="svgContainer"></div>
+    <script type="module" src="index.js"></script>
+</body>
+
+</html>
